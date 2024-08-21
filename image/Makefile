@@ -10,23 +10,15 @@ all: $(OUTPUT_IMAGE)
 
 # Create the TDX guest image
 $(OUTPUT_IMAGE): $(SCRIPT)
-	@$(SCRIPT) -o $(OUTPUT_IMAGE)
+	$(SCRIPT) -o $(OUTPUT_IMAGE)
 
 # Clean up build artifacts
 clean:
-	@rm -rf $(BUILD_DIR)
-	@rm -f $(OUTPUT_IMAGE)
+	rm -rf $(BUILD_DIR)
+	rm -f $(OUTPUT_IMAGE)
 
 # Force recreation of the image
 force:
-	@$(SCRIPT) -o $(OUTPUT_IMAGE)
-
-# Help target
-help:
-	@echo "Available targets:"
-	@echo "  all (default) - Create the TDX guest image"
-	@echo "  clean         - Remove build artifacts and output image"
-	@echo "  force         - Force recreation of the image"
-	@echo "  help          - Show this help message"
+	$(SCRIPT) -o $(OUTPUT_IMAGE)
 
 .PHONY: all clean force help

@@ -46,7 +46,7 @@ LOGFILE=${BUILD_DIR}/tdx-guest-setup.log
 FORCE_RECREATE=false
 OFFICIAL_UBUNTU_IMAGE=${OFFICIAL_UBUNTU_IMAGE:-"https://cloud-images.ubuntu.com/releases/noble/release/"}
 CLOUD_IMG=${CLOUD_IMG:-"ubuntu-24.04-server-cloudimg-amd64.img"}
-CLOUD_IMG_PATH=$(realpath "${BUILD_DIR}/${CLOUD_IMG}")
+CLOUD_IMG_PATH="${BUILD_DIR}/${CLOUD_IMG}"
 if [[ "${TDX_SETUP_INTEL_KERNEL}" == "1" ]]; then
     GUEST_IMG_PATH=$(realpath "tdx-guest-ubuntu-24.04-intel.qcow2")
 else
@@ -268,16 +268,6 @@ check_tool genisoimage
 info "Installation of required tools"
 
 process_args "$@"
-
-#
-# Check user permission
-#
-if (( ${EUID} != 0 )); then
-    warn "Current user is not root, please use root permission via \"sudo\" or make sure current user has correct "\
-         "permission by configuring /etc/libvirt/qemu.conf"
-    warn "Please refer https://libvirt.org/drvqemu.html#posix-users-groups"
-    sleep 5
-fi
 
 create_guest_image
 
