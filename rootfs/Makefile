@@ -6,6 +6,7 @@ OUTPUT_IMAGE := rootfs.iso
 IMAGE_PATH := ../image/tdx-guest-ubuntu-24.04-generic.qcow2
 ISO_ROOTDIR := isoroot
 CPIO_IMAGE := $(ISO_ROOTDIR)/rootfs.cpio
+INSTALL_DIR := $(shell pwd)/../dist
 
 # Default target
 all: $(OUTPUT_IMAGE)
@@ -24,5 +25,10 @@ $(IMAGE_PATH):
 # Clean up build artifacts
 clean:
 	rm -f $(OUTPUT_INITRD)
+	rm -rf $(ISO_ROOTDIR)
 
-.PHONY: all clean
+install: $(OUTPUT_IMAGE)
+	mkdir -p $(INSTALL_DIR)
+	cp -r $(OUTPUT_IMAGE) $(INSTALL_DIR)
+
+.PHONY: all clean install

@@ -4,6 +4,7 @@
 MKINITRAMFS := ./mkinitramfs
 OUTPUT_INITRD := initrd.img
 KERNEL_VERSION := 6.8.0-40-generic
+INSTALL_DIR := $(shell pwd)/../dist
 
 # Default target
 all: $(OUTPUT_INITRD)
@@ -11,6 +12,10 @@ all: $(OUTPUT_INITRD)
 # Create the TDX guest initramfs
 $(OUTPUT_INITRD): $(MKINITRAMFS)
 	$(MKINITRAMFS) -v -d config -o $(OUTPUT_INITRD) $(KERNEL_VERSION)
+
+install: $(OUTPUT_INITRD)
+	mkdir -p $(INSTALL_DIR)
+	cp -r $(OUTPUT_INITRD) $(INSTALL_DIR)
 
 # Clean up build artifacts
 clean:

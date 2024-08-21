@@ -4,6 +4,7 @@
 SCRIPT := ./create-td-image.sh
 BUILD_DIR := build
 OUTPUT_IMAGE := tdx-guest-ubuntu-24.04-generic.qcow2
+INSTALL_DIR := $(shell pwd)/../dist
 
 # Default target
 all: $(OUTPUT_IMAGE)
@@ -21,4 +22,8 @@ clean:
 force:
 	$(SCRIPT) -o $(OUTPUT_IMAGE)
 
-.PHONY: all clean force help
+install: $(OUTPUT_IMAGE)
+	mkdir -p $(INSTALL_DIR)
+	cp -r $(OUTPUT_IMAGE) $(INSTALL_DIR)
+
+.PHONY: all clean force help install
