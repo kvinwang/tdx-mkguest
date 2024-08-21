@@ -1,0 +1,86 @@
+#!/bin/sh
+
+rafs_premount() {
+    local key_phrase initialized=0
+
+    mkdir -p /config || panic "RAFS: Failed to create /config directory"
+    mount -t 9p -o trans=virtio,version=9p2000.L config /config || panic "RAFS: Failed to mount config"
+
+    if [ -e /config/key_phrase ]; then
+        echo "RAFS: Key phrase found"
+        key_phrase="$(cat /config/key_phrase)" || panic "RAFS: Failed to read key phrase"
+        initialized=1
+    else
+        key_phrase="$(head -c 128 /dev/urandom | tr -dc A-Za-z0-9)" || panic "RAFS: Failed to generate key phrase"
+        echo "RAFS: New key phrase: $key_phrase"
+        echo "$key_phrase" > /config/key_phrase
+    fi
+
+    if [ $initialized -eq 0 ]; then
+        [ -z "${INITIMG}" ] && panic "RAFS: initimg not set"
+
+        echo "RAFS: Mounting init image ${INITIMG}"
+        INITDATA_DIR=/initdata
+        mkdir -p ${INITDATA_DIR} || panic "RAFS: Failed to create ${INITDATA_DIR}"
+
+        if [ -z "${INITIMGTYPE}" ]; then
+            case "${INITIMG}" in
+                /dev/cdrom*|/dev/sr*)
+                    INITIMGTYPE="-t iso9660"
+                    ;;
+            esac
+        fi
+        mount ${INITIMGTYPE} -o ro ${INITIMG} ${INITDATA_DIR} || panic "RAFS: Failed to mount init image"
+
+        echo "RAFS: Initializing"
+        echo "[$(date +%H:%M:%S)] RAFS: Formatting rootfs"
+        echo "cmd: cryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 ${ROOTINTEGRITY} --pbkdf pbkdf2 -d- ${ROOT}"
+        echo "$key_phrase" | cryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 ${ROOTINTEGRITY} --pbkdf pbkdf2 -d- ${ROOT} || panic "RAFS: Failed to format rootfs"
+        echo "[$(date +%H:%M:%S)] RAFS: Formatting rootfs done"
+        echo "$key_phrase" | cryptsetup luksOpen --type luks2 -d- ${ROOT} rootfs_crypt || panic "RAFS: Failed to open encrypted rootfs"
+        mkfs.ext4 -L cloudimg-rootfs /dev/mapper/rootfs_crypt || panic "RAFS: Failed to create ext4 filesystem"
+        mount /dev/mapper/rootfs_crypt /root || panic "RAFS: Failed to mount rootfs"
+
+        echo "TODO: calculate hash of rootfs"
+        echo "[$(date +%H:%M:%S)] RAFS: Extracting rootfs, this may take a while..."
+        if [ -e ${INITDATA_DIR}/rootfs.cpio ]; then
+            (cd /root && cpio -i < ${INITDATA_DIR}/rootfs.cpio) || panic "RAFS: Failed to extract rootfs.cpio"
+        elif [ -e ${INITDATA_DIR}/rootfs.gz ]; then
+            (cd /root && gzip -dc ${INITDATA_DIR}/rootfs.gz | cpio -i) || panic "RAFS: Failed to extract rootfs.gz"
+        else
+            panic "RAFS: No rootfs found"
+        fi
+        echo "[$(date +%H:%M:%S)] RAFS: Done"
+        umount /root || panic "RAFS: Failed to unmount /root"
+    else
+        echo "[$(date +%H:%M:%S)] RAFS: Mounting"
+        echo "$key_phrase" | cryptsetup luksOpen --type luks2 -d- ${ROOT} rootfs_crypt || panic "RAFS: Failed to open encrypted rootfs"
+    fi
+    umount /config || panic "RAFS: Failed to unmount /config"
+    ROOT=/dev/mapper/rootfs_crypt
+}
+
+mountroot()
+{
+    echo "RAFS: Mounting root"
+    local_mount_root
+}
+
+mount_top()
+{
+    echo "RAFS: Mounting top"
+    local_top
+}
+
+mount_premount()
+{
+    echo "RAFS: Pre-mounting"
+    rafs_premount
+    local_premount
+}
+
+mount_bottom()
+{
+    echo "RAFS: Bottom mounting"
+    local_bottom
+}

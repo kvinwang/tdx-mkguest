@@ -1,0 +1,55 @@
+#!/bin/sh
+set -e
+
+# initramfs hook to include dhcpcd as DHCP client
+
+PREREQ=""
+
+# Output pre-requisites
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case "$1" in
+	prereqs)
+		prereqs
+		exit 0
+		;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+if ! [ -x /usr/sbin/dhcpcd ]; then
+        exit 0
+fi
+
+copy_exec /usr/sbin/dhcpcd
+copy_exec /usr/lib/dhcpcd/dhcpcd-run-hooks
+copy_file config /usr/lib/dhcpcd/dhcpcd-hooks/30-hostname
+copy_file config /usr/share/initramfs-tools/dhcpcd-hooks/10-mtu /usr/lib/dhcpcd/dhcpcd-hooks/10-mtu
+copy_file config /usr/share/initramfs-tools/dhcpcd-hooks/70-net-conf /usr/lib/dhcpcd/dhcpcd-hooks/70-net-conf
+mkdir -p "${DESTDIR}/var/lib/dhcpcd"
+
+mkdir -p "${DESTDIR}/etc"
+cat >"${DESTDIR}/etc/dhcpcd.conf" <<EOF
+# Options from default configuration
+persistent
+vendorclassid
+option domain_name_servers, domain_name, domain_search
+option classless_static_routes
+option interface_mtu
+option host_name
+option rapid_commit
+require dhcp_server_identifier
+slaac private
+
+# initramfs-tools specific options
+duid ll
+env hostname_fqdn=no
+EOF
+grep ^dhcpcd: /etc/passwd >>"${DESTDIR}/etc/passwd" || true
+
+# find the multiarch lib dir (for example /lib/x86_64-linux-gnu)
+multiarch_dir=$(ldd /usr/sbin/dhcpcd | sed -En 's;^.*/lib(/lib[^/]*prof)?/([^/]+)/libc\.so\..*$;\2;p')
+copy_exec "/usr/lib/${multiarch_dir}/dhcpcd/dev/udev.so"
