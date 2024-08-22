@@ -1,9 +1,13 @@
 # Makefile for TDX Guest Image Creation
 
+include ../config.mk
+
+export QCOW_IMAGE_FILENAME
+
 # Variables
 SCRIPT := ./create-td-image.sh
 BUILD_DIR := build
-OUTPUT_IMAGE := tdx-guest-ubuntu-24.04-generic.qcow2
+OUTPUT_IMAGE := $(QCOW_IMAGE_FILENAME)
 INSTALL_DIR := $(shell pwd)/../dist
 
 # Default target

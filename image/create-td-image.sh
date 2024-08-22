@@ -47,11 +47,7 @@ FORCE_RECREATE=false
 OFFICIAL_UBUNTU_IMAGE=${OFFICIAL_UBUNTU_IMAGE:-"https://cloud-images.ubuntu.com/releases/noble/release/"}
 CLOUD_IMG=${CLOUD_IMG:-"ubuntu-24.04-server-cloudimg-amd64.img"}
 CLOUD_IMG_PATH="${BUILD_DIR}/${CLOUD_IMG}"
-if [[ "${TDX_SETUP_INTEL_KERNEL}" == "1" ]]; then
-    GUEST_IMG_PATH=$(realpath "tdx-guest-ubuntu-24.04-intel.qcow2")
-else
-    GUEST_IMG_PATH=$(realpath "tdx-guest-ubuntu-24.04-generic.qcow2")
-fi
+GUEST_IMG_PATH=$(realpath "${QCOW_IMAGE_FILENAME}")
 TMP_GUEST_IMG_PATH=${BUILD_DIR}/tdx-guest-tmp.qcow2
 SIZE=50
 GUEST_USER=${GUEST_USER:-"tdx"}

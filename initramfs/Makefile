@@ -1,9 +1,10 @@
 # Makefile for TDX Guest Initramfs Creation
 
+include ../config.mk
+
 # Variables
 MKINITRAMFS := ./mkinitramfs
 OUTPUT_INITRD := initrd.img
-KERNEL_VERSION := 6.8.0-40-generic
 INSTALL_DIR := $(shell pwd)/../dist
 
 # Default target

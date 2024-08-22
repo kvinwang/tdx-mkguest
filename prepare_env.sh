@@ -17,3 +17,6 @@ apt install --yes lxc-utils
 apt install --yes isc-dhcp-client
 
 chmod a+r /boot/vmlinuz-$(uname -r)
+
+# install kernel with apt
+make prepare-kernel

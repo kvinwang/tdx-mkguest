@@ -1,9 +1,11 @@
 
 # Makefile for TDX Guest Initramfs Creation
 
+include ../config.mk
+
 # Variables
 OUTPUT_IMAGE := rootfs.iso
-IMAGE_PATH := ../image/tdx-guest-ubuntu-24.04-generic.qcow2
+IMAGE_PATH := ../image/$(QCOW_IMAGE_FILENAME)
 ISO_ROOTDIR := isoroot
 CPIO_IMAGE := $(ISO_ROOTDIR)/rootfs.cpio
 INSTALL_DIR := $(shell pwd)/../dist
