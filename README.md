@@ -36,3 +36,9 @@ You can build individual components or the entire project:
   ```
   make
   ```
+
+### Testing
+To test the built components, run the following command:
+```
+make run
+```

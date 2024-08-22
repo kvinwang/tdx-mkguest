@@ -9,6 +9,7 @@ KERNEL_PATH := $(PWD)/../dist/vmlinuz-$(KERNEL_VERSION)
 INITRD_PATH := $(PWD)/../dist/initrd.img
 ROOTFS_PATH := $(PWD)/../dist/rootfs.iso
 SSH_PORT := 10023
+TD := 0
 
 export IMAGE_PATH
 export CONFIG_DIR
@@ -16,6 +17,7 @@ export KERNEL_PATH
 export INITRD_PATH
 export ROOTFS_PATH
 export SSH_PORT
+export TD
 
 $(IMAGE_PATH): $(BASE_IMAGE_PATH)
 	qemu-img create -f qcow2 -o backing_file=$<,backing_fmt=qcow2 $@
