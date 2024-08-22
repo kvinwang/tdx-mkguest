@@ -2,28 +2,28 @@
 
 include config.mk
 
-INSTALL_DIR := $(shell pwd)/dist
+DIST_DIR := $(shell pwd)/dist
 COMPONENTS := image rootfs initramfs
 
-.PHONY: all $(COMPONENTS) install $(addprefix install-,$(COMPONENTS)) clean $(addprefix clean-,$(COMPONENTS))
+.PHONY: all $(COMPONENTS) install $(addprefix dist-,$(COMPONENTS)) clean $(addprefix clean-,$(COMPONENTS))
 
 all: $(COMPONENTS)
 
 $(COMPONENTS):
 	$(MAKE) -C $@
 
-define install_component
-install-$(1): $(1)
-	$(MAKE) -C $(1) install INSTALL_DIR=$(INSTALL_DIR)
+define dist_component
+dist-$(1): $(1)
+	$(MAKE) -C $(1) install INSTALL_DIR=$(DIST_DIR)
 endef
 
-$(foreach component,$(COMPONENTS),$(eval $(call install_component,$(component))))
+$(foreach component,$(COMPONENTS),$(eval $(call dist_component,$(component))))
 
-install-kernel:
-	mkdir -p $(INSTALL_DIR)
-	cp /boot/vmlinuz-$(KERNEL_VERSION) $(INSTALL_DIR)
+dist-kernel:
+	mkdir -p $(DIST_DIR)
+	cp /boot/vmlinuz-$(KERNEL_VERSION) $(DIST_DIR)
 
-install: $(addprefix install-,$(COMPONENTS)) install-kernel
+dist: $(addprefix dist-,$(COMPONENTS)) dist-kernel
 
 clean: $(addprefix clean-,$(COMPONENTS))
 

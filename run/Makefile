@@ -1,5 +1,6 @@
 include ../config.mk
 
+PWD=$(shell pwd)
 BASE_IMAGE_PATH := $(PWD)/../dist/$(QCOW_IMAGE_FILENAME)
 
 IMAGE_PATH := $(PWD)/vda.img
@@ -23,16 +24,16 @@ $(CONFIG_DIR):
 	mkdir -p $@
 
 $(BASE_IMAGE_PATH):
-	$(MAKE) -C ../ install-image
+	$(MAKE) -C ../ dist-image
 
 $(KERNEL_PATH):
-	$(MAKE) -C ../ install-kernel
+	$(MAKE) -C ../ dist-kernel
 
 $(INITRD_PATH):
-	$(MAKE) -C ../ install-initramfs
+	$(MAKE) -C ../ dist-initramfs
 
 $(ROOTFS_PATH):
-	$(MAKE) -C ../ install-rootfs
+	$(MAKE) -C ../ dist-rootfs
 
 .PHONY: run clean
 
