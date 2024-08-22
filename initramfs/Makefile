@@ -13,12 +13,13 @@ all: $(OUTPUT_INITRD)
 $(OUTPUT_INITRD): $(MKINITRAMFS)
 	$(MKINITRAMFS) -v -d config -o $(OUTPUT_INITRD) $(KERNEL_VERSION)
 
+# Install the initramfs
 install: $(OUTPUT_INITRD)
 	mkdir -p $(INSTALL_DIR)
-	cp -r $(OUTPUT_INITRD) $(INSTALL_DIR)
+	cp $(OUTPUT_INITRD) $(INSTALL_DIR)
 
 # Clean up build artifacts
 clean:
 	rm -f $(OUTPUT_INITRD)
 
-.PHONY: all clean force help
+.PHONY: all clean install

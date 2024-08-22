@@ -20,10 +20,11 @@ clean:
 
 # Force recreation of the image
 force:
-	$(SCRIPT) -o $(OUTPUT_IMAGE)
+	rm -f $(OUTPUT_IMAGE)
+	$(MAKE) $(OUTPUT_IMAGE)
 
 install: $(OUTPUT_IMAGE)
 	mkdir -p $(INSTALL_DIR)
-	cp -r $(OUTPUT_IMAGE) $(INSTALL_DIR)
+	cp $(OUTPUT_IMAGE) $(INSTALL_DIR)
 
-.PHONY: all clean force help install
+.PHONY: all clean force install

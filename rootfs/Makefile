@@ -24,11 +24,11 @@ $(IMAGE_PATH):
 
 # Clean up build artifacts
 clean:
-	rm -f $(OUTPUT_INITRD)
+	rm -f $(OUTPUT_IMAGE)
 	rm -rf $(ISO_ROOTDIR)
 
 install: $(OUTPUT_IMAGE)
 	mkdir -p $(INSTALL_DIR)
-	cp -r $(OUTPUT_IMAGE) $(INSTALL_DIR)
+	cp $(OUTPUT_IMAGE) $(INSTALL_DIR)
 
 .PHONY: all clean install
