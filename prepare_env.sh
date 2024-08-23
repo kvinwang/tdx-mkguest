@@ -13,7 +13,9 @@ apt install --yes qemu-utils nbdfuse fuse2fs
 # from the host system and will collect dhclient into the appliance
 apt install --yes isc-dhcp-client
 
-chmod a+r /boot/vmlinuz-$(uname -r)
+chmod a+r /boot/vmlinuz-*
 
 # install kernel with apt
 make prepare-kernel
+
+echo 'Run `sudo usermod -aG libvirt ${USER}` then logout and login'

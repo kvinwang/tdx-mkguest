@@ -44,6 +44,10 @@ fi
 if [ -z "${MOUNTPOINT}" ]; then
     MOUNTPOINT="mountpoint"
 fi
+if [ -z "${XDG_RUNTIME_DIR}" ]; then
+    XDG_RUNTIME_DIR=$(realpath .run)
+    mkdir -p ${XDG_RUNTIME_DIR}
+fi
 
 delay=0.2
 

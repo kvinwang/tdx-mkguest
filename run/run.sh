@@ -39,7 +39,7 @@ sleep 2
 
 qemu-system-x86_64 \
 		   -accel kvm \
-		   -m 2G -smp 8 \
+		   -m 10G -smp 16 \
 		   -name ${PROCESS_NAME},process=${PROCESS_NAME},debug-threads=on \
 		   -cpu host \
 		   -machine q35,kernel_irqchip=split${MACHINE_ARGS} \
