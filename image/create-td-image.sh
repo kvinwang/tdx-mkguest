@@ -1,46 +1,6 @@
 #!/bin/bash
 
-# This source code is a modified copy of https://github.com/intel/tdx-tools.git
-# See LICENSE.apache file for original license information.
-
-# This file is part of Canonical's TDX repository which includes tools
-# to setup and configure a confidential computing environment
-# based on Intel TDX technology.
-# See the LICENSE file in the repository for the license text.
-
-# Copyright 2024 Canonical Ltd.
-# SPDX-License-Identifier: GPL-3.0-only
-
-# This program is free software: you can redistribute it and/or modify it
-# under the terms of the GNU General Public License version 3,
-# as published by the Free Software Foundation.
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranties
-# of MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-
-# This script will create a TDX guest image (qcow2 format) from a cloud
-# image that is released at : https://cloud-images.ubuntu.com
-# The cloud image is released as qcow3/qcow2 image (with .img suffix)
-# The image comes with only 2 partitions:
-#   - rootfs (~2G -> /)
-#   - BIOS Boot (4M)
-#   - EFI partition (~100M -> /boot/efi/ partition)
-#   - Ext boot (/boot/ partition)
-#
-# As first step, we will resize the rootfs partition to a bigger size
-# As second step, we will boot up the image to run cloud-init (using virtinst)
-# and finally, we use virt-customize to copy in and run TDX setup script
-#
-# TODO : ask cloud init to run the TDX setup script
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
-# source config file
-if [ -f ${SCRIPT_DIR}/config/setup-tdx-config ]; then
-    source ${SCRIPT_DIR}/config/setup-tdx-config
-fi
-
 BUILD_DIR=${SCRIPT_DIR}/build
 LOGFILE=${BUILD_DIR}/tdx-guest-setup.log
 FORCE_RECREATE=false
