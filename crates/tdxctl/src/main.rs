@@ -8,11 +8,12 @@ use tdx_attest as att;
 #[command(author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(clap::Subcommand)]
 enum Commands {
+    Report,
     Quote,
     Extend(ExtendArgs),
 }
@@ -65,6 +66,18 @@ fn cmd_extend(extend_args: ExtendArgs) -> Result<()> {
     Ok(())
 }
 
+fn cmd_report() -> Result<()> {
+    let mut report_data = att::TdxReportData([0; 64]);
+    io::stdin()
+        .read_exact(&mut report_data.0)
+        .context("Failed to read report data")?;
+    let report = att::get_report(&report_data).context("Failed to get report")?;
+    io::stdout()
+        .write_all(&report.0)
+        .context("Failed to write report")?;
+    Ok(())
+}
+
 fn sha384_digest(data: &[u8]) -> [u8; 48] {
     let mut hasher = sha2::Sha384::new();
     hasher.update(data);
@@ -76,13 +89,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Quote) => cmd_quote()?,
-        Some(Commands::Extend(extend_args)) => {
+        Commands::Report => cmd_report()?,
+        Commands::Quote => cmd_quote()?,
+        Commands::Extend(extend_args) => {
             cmd_extend(extend_args)?;
-        }
-        None => {
-            eprintln!("Expected command argument");
-            Cli::parse_from(&["", "--help"]);
         }
     }
 
