@@ -1,4 +1,5 @@
 /dist
+/target
 
 *.img
 *.qcow2
