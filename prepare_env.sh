@@ -3,7 +3,7 @@
 apt update
 
 # install required tools
-apt install --yes qemu-utils libguestfs-tools virtinst genisoimage libvirt-daemon-system
+apt install --yes qemu-utils libguestfs-tools virtinst genisoimage libvirt-daemon-system make
 
 # rootfs tools
 apt install --yes qemu-utils nbdfuse fuse2fs
@@ -14,6 +14,7 @@ apt install --yes qemu-utils nbdfuse fuse2fs
 apt install --yes isc-dhcp-client
 
 chmod a+r /boot/vmlinuz-*
+chmod o+rx ~
 
 # install kernel with apt
 make prepare-kernel
