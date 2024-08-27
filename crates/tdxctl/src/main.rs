@@ -1,34 +1,57 @@
 use anyhow::{Context, Result};
-use clap::Parser;
 use sha2::Digest;
 use std::io::{self, Read, Write};
 use tdx_attest as att;
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+use argh::FromArgs;
+
+#[derive(FromArgs)]
+/// TDX control utility
 struct Cli {
-    #[command(subcommand)]
+    #[argh(subcommand)]
     command: Commands,
 }
 
-#[derive(clap::Subcommand)]
+#[derive(FromArgs)]
+#[argh(subcommand)]
 enum Commands {
-    Report,
-    Quote,
+    Report(ReportCommand),
+    Quote(QuoteCommand),
     Extend(ExtendArgs),
 }
 
-#[derive(clap::Args)]
+#[derive(FromArgs)]
+/// Get TDX report
+#[argh(subcommand, name = "report")]
+struct ReportCommand {}
+
+#[derive(FromArgs)]
+/// Get TDX quote
+#[argh(subcommand, name = "quote")]
+struct QuoteCommand {}
+
+#[derive(FromArgs)]
+/// Extend RTMR
+#[argh(subcommand, name = "extend")]
 struct ExtendArgs {
-    #[arg(long, default_value = "1")]
+    #[argh(option, default = "1", short = 'v')]
+    /// version (default: 1)
     version: u32,
-    #[arg(long, default_value = "3")]
+
+    #[argh(option, default = "3", short = 'i')]
+    /// RTMR index (default: 3)
     index: u32,
-    #[arg(long, default_value = "1")]
+
+    #[argh(option, default = "1", short = 't')]
+    /// event type (default: 1)
     event_type: u32,
-    #[arg(long, default_value = "")]
+
+    #[argh(option, default = "Default::default()", short = 'd')]
+    /// event data
     event_data: String,
-    #[arg(long)]
+
+    #[argh(switch, short = 's')]
+    /// read event data from stdin
     stdin: bool,
 }
 
@@ -86,11 +109,11 @@ fn sha384_digest(data: &[u8]) -> [u8; 48] {
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let cli: Cli = argh::from_env();
 
     match cli.command {
-        Commands::Report => cmd_report()?,
-        Commands::Quote => cmd_quote()?,
+        Commands::Report(_) => cmd_report()?,
+        Commands::Quote(_) => cmd_quote()?,
         Commands::Extend(extend_args) => {
             cmd_extend(extend_args)?;
         }
