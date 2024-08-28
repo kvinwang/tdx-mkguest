@@ -207,6 +207,10 @@ EOT
 install_tools() {
     info "Install tools"
     virt-customize -a ${TMP_GUEST_IMG_PATH} \
+       --mkdir /tmp/tdx \
+       --copy-in ${SCRIPT_DIR}/setup-guest.sh:/tmp/tdx/ \
+       --run-command "chmod +x /tmp/tdx/setup-guest.sh" \
+       --run-command "/tmp/tdx/setup-guest.sh" \
        --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/
 
     if [ $? -eq 0 ]; then
