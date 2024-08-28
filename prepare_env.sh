@@ -1,25 +1,15 @@
 #!/bin/bash
+set -e
 
-add-apt-repository -y ppa:kobuk-team/tdx-release
-add-apt-repository -y ppa:kobuk-team/tdx-attestation-release
+SCRIPT_DIR=$(dirname $(realpath $0))
+cd $SCRIPT_DIR
 
-apt update
+sudo ./script/prepare_env-sudo.sh
+sudo chmod o+rx ~
+sudo usermod -aG libvirt ${USER}
 
-# install required tools
-apt install --yes qemu-utils libguestfs-tools virtinst genisoimage libvirt-daemon-system make libtdx-attest-dev
+# install rustc if not installed
+if ! rustc --version; then
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+fi
 
-# rootfs tools
-apt install --yes qemu-utils nbdfuse fuse2fs
-
-# to allow virt-customize to have name resolution, dhclient should be available
-# on the host system. that is because virt-customize will create an appliance (with supermin)
-# from the host system and will collect dhclient into the appliance
-apt install --yes isc-dhcp-client
-
-chmod a+r /boot/vmlinuz-*
-chmod o+rx ~
-
-# install kernel with apt
-make prepare-kernel
-
-echo 'Run `sudo usermod -aG libvirt ${USER}` then logout and login'
