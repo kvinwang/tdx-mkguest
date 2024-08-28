@@ -204,6 +204,18 @@ EOT
     config_cloud_init_cleanup
 }
 
+install_tools() {
+    info "Install tools"
+    virt-customize -a ${TMP_GUEST_IMG_PATH} \
+       --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/tdxctl
+
+    if [ $? -eq 0 ]; then
+        ok "Install tools"
+    else
+        error "Failed to install tools"
+    fi
+}
+
 cleanup() {
     if [[ -f ${SCRIPT_DIR}/"SHA256SUMS" ]]; then
         rm ${SCRIPT_DIR}/"SHA256SUMS"
@@ -228,6 +240,8 @@ process_args "$@"
 create_guest_image
 
 config_cloud_init
+
+install_tools
 
 cleanup
 

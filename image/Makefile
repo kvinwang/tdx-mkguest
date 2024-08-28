@@ -14,8 +14,14 @@ INSTALL_DIR := $(shell pwd)/../dist
 all: $(OUTPUT_IMAGE)
 
 # Create the TDX guest image
-$(OUTPUT_IMAGE): $(SCRIPT)
+$(OUTPUT_IMAGE): $(SCRIPT) tdxctl
 	$(SCRIPT) -o $(OUTPUT_IMAGE)
+
+tdxctl: ../target/release/tdxctl
+	cp ../target/release/tdxctl .
+
+../target/release/tdxctl:
+	cargo build --release -p tdxctl
 
 # Clean up build artifacts
 clean:
