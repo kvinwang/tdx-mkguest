@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR=$(dirname $(realpath $0))
 cd $SCRIPT_DIR
 
-sudo ./script/prepare_env-sudo.sh
+sudo ./scripts/prepare_env-sudo.sh
 sudo chmod o+rx ~
 sudo usermod -aG libvirt ${USER}
 

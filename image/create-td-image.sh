@@ -207,7 +207,7 @@ EOT
 install_tools() {
     info "Install tools"
     virt-customize -a ${TMP_GUEST_IMG_PATH} \
-       --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/tdxctl
+       --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/
 
     if [ $? -eq 0 ]; then
         ok "Install tools"
