@@ -14,7 +14,7 @@ INSTALL_DIR := $(shell pwd)/../dist
 all: $(OUTPUT_IMAGE)
 
 # Create the TDX guest image
-$(OUTPUT_IMAGE): $(SCRIPT) tdxctl
+$(OUTPUT_IMAGE): $(SCRIPT) tdxctl app-compose.service
 	$(SCRIPT) -o $(OUTPUT_IMAGE)
 
 tdxctl: ../target/release/tdxctl

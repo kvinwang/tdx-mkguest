@@ -205,13 +205,14 @@ EOT
 }
 
 install_tools() {
-    info "Install tools"
+    info "Installing tools"
     virt-customize -a ${TMP_GUEST_IMG_PATH} \
        --mkdir /tmp/tdx \
+       --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/ \
+       --copy-in ${SCRIPT_DIR}/app-compose.service:/etc/systemd/system/ \
        --copy-in ${SCRIPT_DIR}/setup-guest.sh:/tmp/tdx/ \
        --run-command "chmod +x /tmp/tdx/setup-guest.sh" \
-       --run-command "/tmp/tdx/setup-guest.sh" \
-       --copy-in ${SCRIPT_DIR}/tdxctl:/sbin/
+       --run-command "/tmp/tdx/setup-guest.sh"
 
     if [ $? -eq 0 ]; then
         ok "Install tools"
