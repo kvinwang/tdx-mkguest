@@ -6,7 +6,9 @@ include ../config.mk
 MKINITRAMFS := ./mkinitramfs
 OUTPUT_INITRD := initrd.img
 INSTALL_DIR := $(shell pwd)/../dist
+
 TDX_KO = $(shell pwd)/mod-tdx-guest/tdx-guest.ko
+MAKE_TDX_KO = make -C /lib/modules/$(KERNEL_VERSION)/build M=`pwd`/mod-tdx-guest
 
 export TDX_KO
 
@@ -20,7 +22,7 @@ $(OUTPUT_INITRD): $(MKINITRAMFS) $(TDX_KO)
 ko: $(TDX_KO)
 
 $(TDX_KO):
-	make -C /lib/modules/$(KERNEL_VERSION)/build M=`pwd`/mod-tdx-guest
+	$(MAKE_TDX_KO)
 
 # Install the initramfs
 install: $(OUTPUT_INITRD)
@@ -30,6 +32,6 @@ install: $(OUTPUT_INITRD)
 # Clean up build artifacts
 clean:
 	rm -f $(OUTPUT_INITRD) *.ko
-	make -C /lib/modules/$(KERNEL_VERSION)/build M=`pwd`/mod-tdx-guest clean
+	$(MAKE_TDX_KO) clean
 
-.PHONY: all clean install
+.PHONY: all clean install ko

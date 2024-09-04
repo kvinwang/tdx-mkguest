@@ -1,4 +1,5 @@
 /initrd.img
+dist/
 *.ko
 *.o
 *.cmd

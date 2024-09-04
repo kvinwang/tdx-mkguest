@@ -17,11 +17,34 @@
 #include <linux/delay.h>
 #include <linux/sizes.h>
 
-#include <uapi/linux/tdx-guest.h>
-
 #include <asm/cpu_device_id.h>
-#include <asm/tdx.h>
 
+#include "tdx-guest.h"
+#include "tdx.h"
+
+#define TDCALL_RETURN_CODE(a) ((a) >> 32)
+#define TDCALL_INVALID_OPERAND 0xc0000100
+
+#define TDREPORT_SUBTYPE_0 0
+
+static int tdx_mcall_get_report0(u8 *reportdata, u8 *tdreport)
+{
+	struct tdx_module_args args = {
+		.rcx = virt_to_phys(tdreport),
+		.rdx = virt_to_phys(reportdata),
+		.r8 = TDREPORT_SUBTYPE_0,
+	};
+	u64 ret;
+
+	ret = __tdcall(TDG_MR_REPORT, &args);
+	if (ret) {
+		if (TDCALL_RETURN_CODE(ret) == TDCALL_INVALID_OPERAND)
+			return -EINVAL;
+		return -EIO;
+	}
+
+	return 0;
+}
 
 static long tdx_get_report0(struct tdx_report_req __user *req)
 {
@@ -59,15 +82,6 @@ out:
 
 	return ret;
 }
-
-#define TDX_CMD_EXTEND_RTMR _IOR('T', 3, struct tdx_extend_rtmr_req)
-#define TDG_MR_RTMR_EXTEND 2
-#define TDX_EXTEND_RTMR_DATA_LEN 48
-struct tdx_extend_rtmr_req
-{
-	u8 data[TDX_EXTEND_RTMR_DATA_LEN];
-	u8 index;
-};
 
 static long tdx_extend_rtmr(struct tdx_extend_rtmr_req __user *req)
 {
@@ -112,6 +126,7 @@ static long tdx_guest_ioctl(struct file *file, unsigned int cmd,
 	case TDX_CMD_GET_REPORT0:
 		return tdx_get_report0((struct tdx_report_req __user *)arg);
 	case TDX_CMD_EXTEND_RTMR:
+	case TDX_CMD_EXTEND_RTMR2:
 		return tdx_extend_rtmr((struct tdx_extend_rtmr_req __user *)arg);
 	default:
 		return -ENOTTY;
@@ -162,6 +177,6 @@ static void __exit tdx_guest_exit(void)
 }
 module_exit(tdx_guest_exit);
 
-MODULE_AUTHOR("Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>");
+MODULE_AUTHOR("Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>, kvinwang");
 MODULE_DESCRIPTION("TDX Guest Driver");
 MODULE_LICENSE("GPL");
