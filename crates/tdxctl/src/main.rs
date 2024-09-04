@@ -143,7 +143,7 @@ impl core::fmt::Debug for ParsedReport {
             .field("mrownerconfig", &HF(&self.mrownerconfig))
             .field("rtmr0", &HF(&self.rtmr0))
             .field("rtmr1", &HF(&self.rtmr1))
-            .field("rtmr2", &self.rtmr2)
+            .field("rtmr2", &HF(&self.rtmr2))
             .field("rtmr3", &HF(&self.rtmr3))
             .field("servtd_hash", &HF(&self.servtd_hash))
             .finish()
