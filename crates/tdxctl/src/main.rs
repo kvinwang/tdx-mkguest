@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use scale::Decode;
 use sha2::Digest;
 use std::io::{self, Read, Write};
 use tdx_attest as att;
@@ -18,6 +19,7 @@ enum Commands {
     Report(ReportCommand),
     Quote(QuoteCommand),
     Extend(ExtendArgs),
+    Show(ShowCommand),
 }
 
 #[derive(FromArgs)]
@@ -29,6 +31,11 @@ struct ReportCommand {}
 /// Get TDX quote
 #[argh(subcommand, name = "quote")]
 struct QuoteCommand {}
+
+#[derive(FromArgs)]
+/// Show TDX RTMRs
+#[argh(subcommand, name = "show")]
+struct ShowCommand {}
 
 #[derive(FromArgs)]
 /// Extend RTMR
@@ -108,12 +115,58 @@ fn sha384_digest(data: &[u8]) -> [u8; 48] {
     digest.into()
 }
 
+#[derive(Decode)]
+struct ParsedReport {
+    attributes: [u8; 8],
+    xfam: [u8; 8],
+    mrtd: [u8; 48],
+    mrconfigid: [u8; 48],
+    mrowner: [u8; 48],
+    mrownerconfig: [u8; 48],
+    rtmr0: [u8; 48],
+    rtmr1: [u8; 48],
+    rtmr2: [u8; 48],
+    rtmr3: [u8; 48],
+    servtd_hash: [u8; 48],
+}
+
+impl core::fmt::Debug for ParsedReport {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        use hex_fmt::HexFmt as HF;
+
+        f.debug_struct("ParsedReport")
+            .field("attributes", &HF(&self.attributes))
+            .field("xfam", &HF(&self.xfam))
+            .field("mrtd", &HF(&self.mrtd))
+            .field("mrconfigid", &HF(&self.mrconfigid))
+            .field("mrowner", &HF(&self.mrowner))
+            .field("mrownerconfig", &HF(&self.mrownerconfig))
+            .field("rtmr0", &HF(&self.rtmr0))
+            .field("rtmr1", &HF(&self.rtmr1))
+            .field("rtmr2", &self.rtmr2)
+            .field("rtmr3", &HF(&self.rtmr3))
+            .field("servtd_hash", &HF(&self.servtd_hash))
+            .finish()
+    }
+}
+
+fn cmd_show() -> Result<()> {
+    let report_data = att::TdxReportData([0; 64]);
+    let report = att::get_report(&report_data).context("Failed to get report")?;
+    let parsed_report =
+        ParsedReport::decode(&mut report.0.get(512..).context("Failed to get report")?)
+            .context("Failed to decode report")?;
+    println!("{:#?}", parsed_report);
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli: Cli = argh::from_env();
 
     match cli.command {
         Commands::Report(_) => cmd_report()?,
         Commands::Quote(_) => cmd_quote()?,
+        Commands::Show(_) => cmd_show()?,
         Commands::Extend(extend_args) => {
             cmd_extend(extend_args)?;
         }

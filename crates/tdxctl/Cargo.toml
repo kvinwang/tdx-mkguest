@@ -7,5 +7,7 @@ edition = "2021"
 anyhow = "1.0.86"
 argh = "0.1.12"
 hex = "0.4.3"
+hex_fmt = "0.3.0"
+scale = { version = "3.6.12", package = "parity-scale-codec", features = ["derive"] }
 sha2 = "0.10.8"
 tdx-attest = { path = "../tdx-attest" }
