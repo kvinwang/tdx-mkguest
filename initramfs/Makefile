@@ -4,7 +4,7 @@ include ../config.mk
 
 # Variables
 MKINITRAMFS := ./mkinitramfs
-OUTPUT_INITRD := initrd.img
+OUTPUT_INITRD := initrd-$(KERNEL_VERSION).img
 INSTALL_DIR := $(shell pwd)/../dist
 
 TDX_KO = $(shell pwd)/mod-tdx-guest/tdx-guest.ko
