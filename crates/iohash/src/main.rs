@@ -1,5 +1,5 @@
 //! Stream compute hash digest of stdin and output the original data to stdout. The digest is output to stderr.
-use std::io::{Read as _, Write as _};
+use std::io::{Read, Write};
 
 use anyhow::{Context, Result};
 use blake2::{
@@ -18,6 +18,18 @@ struct App {
     /// Binary output
     #[arg(short, long)]
     binary: bool,
+
+    /// Input file. Default is stdin.
+    #[arg(short, long)]
+    input: Option<String>,
+
+    /// Output file
+    #[arg(short, long)]
+    output: Option<String>,
+
+    /// Hash file. Default is stderr.
+    #[arg(short, long)]
+    to: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -43,27 +55,73 @@ enum Command {
 
 impl App {
     fn compute<Hasher: Digest>(&self) -> Result<()> {
+        struct BlackHole;
+        impl Write for BlackHole {
+            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+                Ok(buf.len())
+            }
+
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+
         let mut hasher = Hasher::new();
-        let mut buffer = [0u8; 1024];
+        let mut buffer = vec![0u8; 1024 * 32];
+        let input: &mut dyn Read = match &self.input {
+            Some(input_file) => {
+                if input_file == "-" {
+                    &mut std::io::stdin()
+                } else {
+                    let file =
+                        std::fs::File::open(input_file).context("Failed to open input file")?;
+                    &mut { file }
+                }
+            }
+            None => &mut std::io::stdin(),
+        };
+        let output: &mut dyn Write = match &self.output {
+            Some(output_file) => match output_file.as_str() {
+                "-" => &mut std::io::stdout(),
+                "!" => &mut BlackHole,
+                _ => {
+                    let file =
+                        std::fs::File::create(output_file).context("Failed to open output file")?;
+                    &mut { file }
+                }
+            },
+            None => &mut std::io::stdout(),
+        };
+        let to: &mut dyn Write = match &self.to {
+            Some(to_file) => {
+                if to_file == "-" {
+                    &mut std::io::stdout()
+                } else {
+                    let file =
+                        std::fs::File::create(to_file).context("Failed to open hash file")?;
+                    &mut { file }
+                }
+            }
+            None => &mut std::io::stderr(),
+        };
         loop {
-            let len = std::io::stdin()
+            let len = input
                 .read(&mut buffer)
                 .context("Failed to read from stdin")?;
             if len == 0 {
                 break;
             }
             hasher.update(&buffer[..len]);
-            std::io::stdout()
+            output
                 .write_all(&buffer[..len])
                 .context("Failed to write to stdout")?;
         }
         let digest = hasher.finalize();
         if self.binary {
-            std::io::stderr()
-                .write_all(&digest)
-                .context("Failed to write to stderr")?;
+            to.write_all(&digest)
+                .context("Failed to write hash to file")?;
         } else {
-            eprintln!("{}", hex_fmt::HexFmt(&digest));
+            write!(to, "{}", hex_fmt::HexFmt(&digest)).context("Failed to write hash to file")?;
         }
         Ok(())
     }

@@ -3,7 +3,7 @@
 APP_COMPOSE_FILE="docker-compose.yaml"
 
 FSINIT_premount() {
-    local key_phrase initialized=0 rootfs_hash
+    local key_phrase initialized=0 rootfs_hash app_id
 
     mkdir -p /config || panic "FSINIT: Failed to create /config directory"
     mount -t 9p -o trans=virtio,version=9p2000.L config /config || panic "FSINIT: Failed to mount config"
@@ -48,7 +48,7 @@ FSINIT_premount() {
 
         echo "[$(date +%H:%M:%S)] FSINIT: Extracting rootfs, this may take a while..."
         extract_rootfs() {
-            iohash sha256 2>/tmp/rootfs.hash | cpio -i
+            iohash sha256 -t /tmp/rootfs.hash | cpio -i
         }
         if [ -e ${INITDATA_DIR}/rootfs.cpio ]; then
             (cd /root && cat ${INITDATA_DIR}/rootfs.cpio | extract_rootfs) || panic "FSINIT: Failed to extract rootfs.cpio"
@@ -75,9 +75,16 @@ FSINIT_premount() {
     ROOT=/dev/mapper/rootfs_crypt
 
     mount ${ROOT} /root || panic "FSINIT: Failed to mount rootfs"
+
     rootfs_hash=$(cat /root/rootfs.hash)
     echo "FSINIT: Extending rootfs hash to RTMR, hash=${rootfs_hash}"
     tdxctl extend -i 3 --digest ${rootfs_hash} --associated-data "rootfs-hash" || panic "FSINIT: Failed to extend rootfs to RTMR"
+
+    app_id=$(iohash -i /root/app/${APP_COMPOSE_FILE} -t- sha256)
+    echo "FSINIT: Extending app id to RTMR, app_id=${app_id}"
+    tdxctl extend -i 3 --digest ${app_id} --associated-data "app-id" || panic "FSINIT: Failed to extend app id to RTMR"
+
+    echo "TODO: check app_id matches the declaration"
     umount /root || panic "FSINIT: Failed to unmount /root"
 }
 
