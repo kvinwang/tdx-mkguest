@@ -1,6 +1,7 @@
 # Makefile for TDX Guest Initramfs Creation
 
 include ../config.mk
+include ../tools.mk
 
 # Variables
 MKINITRAMFS := ./mkinitramfs
@@ -11,12 +12,14 @@ TDX_KO = $(shell pwd)/mod-tdx-guest/tdx-guest.ko
 MAKE_TDX_KO = make -C /lib/modules/$(KERNEL_VERSION)/build M=`pwd`/mod-tdx-guest
 
 export TDX_KO
+export CMD_IOHASH
+export CMD_TDXCTL
 
 # Default target
 all: $(OUTPUT_INITRD)
 
 # Create the TDX guest initramfs
-$(OUTPUT_INITRD): $(MKINITRAMFS) $(TDX_KO)
+$(OUTPUT_INITRD): $(MKINITRAMFS) $(TDX_KO) $(CMD_IOHASH) $(CMD_TDXCTL)
 	$(MKINITRAMFS) -v -d config -o $(OUTPUT_INITRD) $(KERNEL_VERSION)
 
 ko: $(TDX_KO)
@@ -31,7 +34,7 @@ install: $(OUTPUT_INITRD)
 
 # Clean up build artifacts
 clean:
-	rm -f $(OUTPUT_INITRD) *.ko
+	rm -f *.img *.ko
 	$(MAKE_TDX_KO) clean
 
 .PHONY: all clean install ko

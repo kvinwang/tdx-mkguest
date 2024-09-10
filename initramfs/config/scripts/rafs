@@ -46,16 +46,21 @@ FSINIT_premount() {
         mkfs.ext4 -L cloudimg-rootfs /dev/mapper/rootfs_crypt || panic "FSINIT: Failed to create ext4 filesystem"
         mount /dev/mapper/rootfs_crypt /root || panic "FSINIT: Failed to mount rootfs"
 
-        echo "TODO: calculate hash of rootfs"
         echo "[$(date +%H:%M:%S)] FSINIT: Extracting rootfs, this may take a while..."
+        extract_rootfs() {
+            iohash -b sha256 2>/tmp/rootfs.hash | cpio -i
+        }
         if [ -e ${INITDATA_DIR}/rootfs.cpio ]; then
-            (cd /root && cpio -i < ${INITDATA_DIR}/rootfs.cpio) || panic "FSINIT: Failed to extract rootfs.cpio"
+            (cd /root && cat ${INITDATA_DIR}/rootfs.cpio | extract_rootfs) || panic "FSINIT: Failed to extract rootfs.cpio"
         elif [ -e ${INITDATA_DIR}/rootfs.gz ]; then
-            (cd /root && gzip -dc ${INITDATA_DIR}/rootfs.gz | cpio -i) || panic "FSINIT: Failed to extract rootfs.gz"
+            (cd /root && gzip -dc ${INITDATA_DIR}/rootfs.gz | extract_rootfs) || panic "FSINIT: Failed to extract rootfs.gz"
         else
             panic "FSINIT: No rootfs found"
         fi
-        echo "[$(date +%H:%M:%S)] FSINIT: Done"
+        cp /tmp/rootfs.hash /root/rootfs.hash
+        echo "TODO: check the declared hash matches the actual hash"
+
+        echo "[$(date +%H:%M:%S)] FSINIT: Done, hash=$(tdxctl hex /tmp/rootfs.hash)"
         mkdir -p /root/app
         if [ -e /app.yaml ]; then
             cp /app.yaml /root/app/${APP_COMPOSE_FILE}
@@ -68,6 +73,12 @@ FSINIT_premount() {
     fi
     umount /config || panic "FSINIT: Failed to unmount /config"
     ROOT=/dev/mapper/rootfs_crypt
+
+    echo "FSINIT: Extending rootfs to RTMR"
+    mount ${ROOT} /root || panic "FSINIT: Failed to mount rootfs"
+    echo "FSINIT: Extending rootfs hash to RTMR, hash=$(tdxctl hex /root/rootfs.hash)"
+    cat /root/rootfs.hash | tdxctl extend -i 3 -d "rootfs" || panic "FSINIT: Failed to extend rootfs to RTMR"
+    umount /root || panic "FSINIT: Failed to unmount /root"
 }
 
 mountroot()

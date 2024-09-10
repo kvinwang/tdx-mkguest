@@ -1,6 +1,7 @@
 # TDX Guest Components: Image, Rootfs, and Initramfs
 
 include config.mk
+include tools.mk
 
 DIST_DIR := $(shell pwd)/dist
 COMPONENTS := image rootfs initramfs

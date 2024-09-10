@@ -1,6 +1,7 @@
 # Makefile for TDX Guest Image Creation
 
 include ../config.mk
+include ../tools.mk
 
 export QCOW_IMAGE_FILENAME
 
@@ -16,12 +17,6 @@ all: $(OUTPUT_IMAGE)
 # Create the TDX guest image
 $(OUTPUT_IMAGE): $(SCRIPT) tdxctl app-compose.service
 	$(SCRIPT) -o $(OUTPUT_IMAGE)
-
-tdxctl: ../target/release/tdxctl
-	cp ../target/release/tdxctl .
-
-../target/release/tdxctl:
-	cargo build --release -p tdxctl
 
 # Clean up build artifacts
 clean:

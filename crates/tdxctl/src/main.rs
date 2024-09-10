@@ -20,6 +20,7 @@ enum Commands {
     Quote(QuoteCommand),
     Extend(ExtendArgs),
     Show(ShowCommand),
+    Hex(HexCommand),
 }
 
 #[derive(FromArgs)]
@@ -36,6 +37,15 @@ struct QuoteCommand {}
 /// Show TDX RTMRs
 #[argh(subcommand, name = "show")]
 struct ShowCommand {}
+
+#[derive(FromArgs)]
+/// Hex encode data
+#[argh(subcommand, name = "hex")]
+struct HexCommand {
+    #[argh(positional)]
+    /// filename to hex encode
+    filename: Option<String>,
+}
 
 #[derive(FromArgs)]
 /// Extend RTMR
@@ -160,6 +170,28 @@ fn cmd_show() -> Result<()> {
     Ok(())
 }
 
+fn cmd_hex(hex_args: HexCommand) -> Result<()> {
+    fn hex_encode_io(io: &mut impl Read) -> Result<()> {
+        loop {
+            let mut buf = [0; 1024];
+            let n = io.read(&mut buf).context("Failed to read from stdin")?;
+            if n == 0 {
+                break;
+            }
+            print!("{}", hex_fmt::HexFmt(&buf[..n]));
+        }
+        Ok(())
+    }
+    if let Some(filename) = hex_args.filename {
+        let mut input =
+            std::fs::File::open(&filename).context(format!("Failed to open {}", filename))?;
+        hex_encode_io(&mut input)?;
+    } else {
+        hex_encode_io(&mut io::stdin())?;
+    };
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli: Cli = argh::from_env();
 
@@ -169,6 +201,9 @@ fn main() -> Result<()> {
         Commands::Show(_) => cmd_show()?,
         Commands::Extend(extend_args) => {
             cmd_extend(extend_args)?;
+        }
+        Commands::Hex(hex_args) => {
+            cmd_hex(hex_args)?;
         }
     }
 
