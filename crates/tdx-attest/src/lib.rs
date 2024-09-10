@@ -24,9 +24,8 @@ pub struct TdxReport(pub [u8; TDX_REPORT_SIZE as usize]);
 pub struct TdxRtmrEvent {
     pub version: u32,
     pub rtmr_index: u64,
-    pub extend_data: [u8; 48usize],
+    pub digest: [u8; 48usize],
     pub event_type: u32,
-    pub event_data: Vec<u8>,
 }
 
 #[repr(u32)]
@@ -115,33 +114,18 @@ pub fn get_report(report_data: &TdxReportData) -> Result<TdxReport> {
 }
 
 pub fn extend_rtmr(rtmr_event: &TdxRtmrEvent) -> Result<()> {
-    let event_hdr = tdx_rtmr_event_t {
+    let event = tdx_rtmr_event_t {
         version: rtmr_event.version,
         rtmr_index: rtmr_event.rtmr_index,
-        extend_data: rtmr_event.extend_data,
+        extend_data: rtmr_event.digest,
         event_type: rtmr_event.event_type,
-        event_data_size: rtmr_event
-            .event_data
-            .len()
-            .try_into()
-            .or(Err(TdxAttestError::ExtendFailure))?,
+        event_data_size: 0,
         event_data: Default::default(),
     };
-    let mut event_buffer = vec![0u8; rtmr_event.event_data.len() + size_of::<tdx_rtmr_event_t>()];
-    unsafe {
-        std::ptr::copy_nonoverlapping(
-            &event_hdr as *const _ as *const u8,
-            event_buffer.as_mut_ptr(),
-            size_of::<tdx_rtmr_event_t>(),
-        );
-    }
-    event_buffer[size_of::<tdx_rtmr_event_t>()..].copy_from_slice(&rtmr_event.event_data);
-    let error = unsafe { tdx_att_extend(event_buffer.as_ptr() as *const tdx_rtmr_event_t) };
-
+    let error = unsafe { tdx_att_extend(&event) };
     if error != _tdx_attest_error_t::TDX_ATTEST_SUCCESS {
         return Err(error.into());
     }
-
     Ok(())
 }
 

@@ -3,7 +3,7 @@
 APP_COMPOSE_FILE="docker-compose.yaml"
 
 FSINIT_premount() {
-    local key_phrase initialized=0
+    local key_phrase initialized=0 rootfs_hash
 
     mkdir -p /config || panic "FSINIT: Failed to create /config directory"
     mount -t 9p -o trans=virtio,version=9p2000.L config /config || panic "FSINIT: Failed to mount config"
@@ -48,7 +48,7 @@ FSINIT_premount() {
 
         echo "[$(date +%H:%M:%S)] FSINIT: Extracting rootfs, this may take a while..."
         extract_rootfs() {
-            iohash -b sha256 2>/tmp/rootfs.hash | cpio -i
+            iohash sha256 2>/tmp/rootfs.hash | cpio -i
         }
         if [ -e ${INITDATA_DIR}/rootfs.cpio ]; then
             (cd /root && cat ${INITDATA_DIR}/rootfs.cpio | extract_rootfs) || panic "FSINIT: Failed to extract rootfs.cpio"
@@ -60,7 +60,7 @@ FSINIT_premount() {
         cp /tmp/rootfs.hash /root/rootfs.hash
         echo "TODO: check the declared hash matches the actual hash"
 
-        echo "[$(date +%H:%M:%S)] FSINIT: Done, hash=$(tdxctl hex /tmp/rootfs.hash)"
+        echo "[$(date +%H:%M:%S)] FSINIT: Done, hash=$(cat /tmp/rootfs.hash)"
         mkdir -p /root/app
         if [ -e /app.yaml ]; then
             cp /app.yaml /root/app/${APP_COMPOSE_FILE}
@@ -74,10 +74,10 @@ FSINIT_premount() {
     umount /config || panic "FSINIT: Failed to unmount /config"
     ROOT=/dev/mapper/rootfs_crypt
 
-    echo "FSINIT: Extending rootfs to RTMR"
+    rootfs_hash=$(cat /root/rootfs.hash)
+    echo "FSINIT: Extending rootfs hash to RTMR, hash=${rootfs_hash}"
     mount ${ROOT} /root || panic "FSINIT: Failed to mount rootfs"
-    echo "FSINIT: Extending rootfs hash to RTMR, hash=$(tdxctl hex /root/rootfs.hash)"
-    cat /root/rootfs.hash | tdxctl extend -i 3 -d "rootfs" || panic "FSINIT: Failed to extend rootfs to RTMR"
+    tdxctl extend -i 3 --digest ${rootfs_hash} --associated-data "rootfs-hash" || panic "FSINIT: Failed to extend rootfs to RTMR"
     umount /root || panic "FSINIT: Failed to unmount /root"
 }
 

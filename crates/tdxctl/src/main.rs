@@ -1,75 +1,66 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
+use clap::{Parser, Subcommand};
 use scale::Decode;
-use sha2::Digest;
+use serde::{Deserialize, Serialize};
 use std::io::{self, Read, Write};
 use tdx_attest as att;
 
-use argh::FromArgs;
+const EVENT_LOG_FILE: &str = "/var/log/tdx_mr3/tdx_events.log";
 
-#[derive(FromArgs)]
+#[derive(Parser)]
 /// TDX control utility
 struct Cli {
-    #[argh(subcommand)]
+    #[clap(subcommand)]
     command: Commands,
 }
 
-#[derive(FromArgs)]
-#[argh(subcommand)]
+#[derive(Subcommand)]
 enum Commands {
-    Report(ReportCommand),
-    Quote(QuoteCommand),
+    Report,
+    Quote,
     Extend(ExtendArgs),
-    Show(ShowCommand),
+    Show,
     Hex(HexCommand),
 }
 
-#[derive(FromArgs)]
-/// Get TDX report
-#[argh(subcommand, name = "report")]
-struct ReportCommand {}
-
-#[derive(FromArgs)]
-/// Get TDX quote
-#[argh(subcommand, name = "quote")]
-struct QuoteCommand {}
-
-#[derive(FromArgs)]
-/// Show TDX RTMRs
-#[argh(subcommand, name = "show")]
-struct ShowCommand {}
-
-#[derive(FromArgs)]
+#[derive(Parser)]
 /// Hex encode data
-#[argh(subcommand, name = "hex")]
 struct HexCommand {
-    #[argh(positional)]
+    #[clap(value_parser)]
     /// filename to hex encode
     filename: Option<String>,
 }
 
-#[derive(FromArgs)]
+#[derive(Parser)]
 /// Extend RTMR
-#[argh(subcommand, name = "extend")]
 struct ExtendArgs {
-    #[argh(option, default = "1", short = 'v')]
+    #[arg(short = 'v', long, default_value_t = 1)]
     /// version (default: 1)
     version: u32,
 
-    #[argh(option, default = "3", short = 'i')]
+    #[clap(short = 'i', long, default_value_t = 3)]
     /// RTMR index (default: 3)
     index: u32,
 
-    #[argh(option, default = "1", short = 't')]
+    #[clap(short = 't', long, default_value_t = 1)]
     /// event type (default: 1)
     event_type: u32,
 
-    #[argh(option, default = "Default::default()", short = 'd')]
-    /// event data
-    event_data: String,
+    #[clap(short, long, default_value = "")]
+    /// digest to extend to the RTMR
+    digest: String,
 
-    #[argh(switch, short = 's')]
-    /// read event data from stdin
-    stdin: bool,
+    #[clap(short, long)]
+    /// associated data of the event
+    associated_data: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct EventLog {
+    imr: u32,
+    event_type: u32,
+    digest: String,
+    associated_data: String,
 }
 
 fn cmd_quote() -> Result<()> {
@@ -85,24 +76,50 @@ fn cmd_quote() -> Result<()> {
 }
 
 fn cmd_extend(extend_args: ExtendArgs) -> Result<()> {
-    let event_data = if extend_args.stdin {
-        let mut data = Vec::new();
-        io::stdin()
-            .read_to_end(&mut data)
-            .context("Failed to read from stdin")?;
-        data
-    } else {
-        extend_args.event_data.into_bytes()
-    };
-    let extend_data = sha384_digest(&event_data);
+    let digest = hex::decode(&extend_args.digest).context("Failed to decode digest")?;
+
+    let mut padded_digest: [u8; 48] = [0; 48];
+    if digest.len() > 48 {
+        bail!("Digest too long");
+    }
+    padded_digest[..digest.len()].copy_from_slice(&digest);
     let rtmr_event = att::TdxRtmrEvent {
         version: extend_args.version,
         rtmr_index: extend_args.index as u64,
-        extend_data,
+        digest: padded_digest,
         event_type: extend_args.event_type,
-        event_data,
     };
     att::extend_rtmr(&rtmr_event).context("Failed to extend RTMR")?;
+    let hexed_digest = hex::encode(&padded_digest);
+
+    println!("Extended RTMR {}: {}", extend_args.index, hexed_digest);
+
+    // Append to event log
+    let event_log = EventLog {
+        imr: extend_args.index,
+        event_type: extend_args.event_type,
+        digest: hexed_digest,
+        associated_data: extend_args.associated_data,
+    };
+    let logline = serde_json::to_string(&event_log).context("Failed to serialize event log")?;
+
+    let logfile_path = std::path::Path::new(EVENT_LOG_FILE);
+    let logfile_dir = logfile_path
+        .parent()
+        .context("Failed to get event log directory")?;
+    std::fs::create_dir_all(logfile_dir).context("Failed to create event log directory")?;
+
+    let mut logfile = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(logfile_path)
+        .context("Failed to open event log file")?;
+    logfile
+        .write_all(logline.as_bytes())
+        .context("Failed to write to event log file")?;
+    logfile
+        .write_all(b"\n")
+        .context("Failed to write to event log file")?;
     Ok(())
 }
 
@@ -116,13 +133,6 @@ fn cmd_report() -> Result<()> {
         .write_all(&report.0)
         .context("Failed to write report")?;
     Ok(())
-}
-
-fn sha384_digest(data: &[u8]) -> [u8; 48] {
-    let mut hasher = sha2::Sha384::new();
-    hasher.update(data);
-    let digest = hasher.finalize();
-    digest.into()
 }
 
 #[derive(Decode)]
@@ -193,12 +203,12 @@ fn cmd_hex(hex_args: HexCommand) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let cli: Cli = argh::from_env();
+    let cli = Cli::parse();
 
     match cli.command {
-        Commands::Report(_) => cmd_report()?,
-        Commands::Quote(_) => cmd_quote()?,
-        Commands::Show(_) => cmd_show()?,
+        Commands::Report => cmd_report()?,
+        Commands::Quote => cmd_quote()?,
+        Commands::Show => cmd_show()?,
         Commands::Extend(extend_args) => {
             cmd_extend(extend_args)?;
         }
