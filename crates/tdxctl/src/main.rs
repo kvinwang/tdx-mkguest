@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::io::{self, Read, Write};
 use tdx_attest as att;
 
-const EVENT_LOG_FILE: &str = "/var/log/tdx_mr3/tdx_events.log";
+const EVENT_LOG_FILE: &str = "/run/log/tdx_mr3/tdx_events.log";
 
 #[derive(Parser)]
 /// TDX control utility
