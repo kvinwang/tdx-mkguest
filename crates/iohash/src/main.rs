@@ -6,15 +6,17 @@ use blake2::{
     digest::consts::{U32, U64},
     Blake2b, Blake2s,
 };
-use clap::{Parser, Subcommand};
+use clap::{Parser, ValueEnum};
 use sha2::{Digest, Sha224, Sha256, Sha384, Sha512, Sha512_224, Sha512_256};
 use sha3::{Keccak224, Keccak256, Keccak384, Keccak512, Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct App {
-    #[command(subcommand)]
-    command: Command,
+    /// Hash algorithm
+    #[arg(value_enum)]
+    algorithm: Algorithm,
+
     /// Binary output
     #[arg(short, long)]
     binary: bool,
@@ -32,8 +34,8 @@ struct App {
     to: Option<String>,
 }
 
-#[derive(Subcommand, Debug)]
-enum Command {
+#[derive(ValueEnum, Debug, Clone)]
+enum Algorithm {
     Sha256,
     Sha512,
     Sha384,
@@ -129,56 +131,56 @@ impl App {
 
 fn main() -> Result<()> {
     let app = App::parse();
-    match app.command {
-        Command::Sha256 => {
+    match app.algorithm {
+        Algorithm::Sha256 => {
             app.compute::<Sha256>()?;
         }
-        Command::Sha512 => {
+        Algorithm::Sha512 => {
             app.compute::<Sha512>()?;
         }
-        Command::Sha384 => {
+        Algorithm::Sha384 => {
             app.compute::<Sha384>()?;
         }
-        Command::Sha512_224 => {
+        Algorithm::Sha512_224 => {
             app.compute::<Sha512_224>()?;
         }
-        Command::Sha512_256 => {
+        Algorithm::Sha512_256 => {
             app.compute::<Sha512_256>()?;
         }
-        Command::Sha224 => {
+        Algorithm::Sha224 => {
             app.compute::<Sha224>()?;
         }
-        Command::Keccak224 => {
+        Algorithm::Keccak224 => {
             app.compute::<Keccak224>()?;
         }
-        Command::Keccak256 => {
+        Algorithm::Keccak256 => {
             app.compute::<Keccak256>()?;
         }
-        Command::Keccak384 => {
+        Algorithm::Keccak384 => {
             app.compute::<Keccak384>()?;
         }
-        Command::Keccak512 => {
+        Algorithm::Keccak512 => {
             app.compute::<Keccak512>()?;
         }
-        Command::Sha3_224 => {
+        Algorithm::Sha3_224 => {
             app.compute::<Sha3_224>()?;
         }
-        Command::Sha3_256 => {
+        Algorithm::Sha3_256 => {
             app.compute::<Sha3_256>()?;
         }
-        Command::Sha3_384 => {
+        Algorithm::Sha3_384 => {
             app.compute::<Sha3_384>()?;
         }
-        Command::Sha3_512 => {
+        Algorithm::Sha3_512 => {
             app.compute::<Sha3_512>()?;
         }
-        Command::Blake2b256 => {
+        Algorithm::Blake2b256 => {
             app.compute::<Blake2b<U32>>()?;
         }
-        Command::Blake2b512 => {
+        Algorithm::Blake2b512 => {
             app.compute::<Blake2b<U64>>()?;
         }
-        Command::Blake2s256 => {
+        Algorithm::Blake2s256 => {
             app.compute::<Blake2s<U32>>()?;
         }
     }
