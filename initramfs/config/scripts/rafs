@@ -74,9 +74,9 @@ FSINIT_premount() {
     umount /config || panic "FSINIT: Failed to unmount /config"
     ROOT=/dev/mapper/rootfs_crypt
 
+    mount ${ROOT} /root || panic "FSINIT: Failed to mount rootfs"
     rootfs_hash=$(cat /root/rootfs.hash)
     echo "FSINIT: Extending rootfs hash to RTMR, hash=${rootfs_hash}"
-    mount ${ROOT} /root || panic "FSINIT: Failed to mount rootfs"
     tdxctl extend -i 3 --digest ${rootfs_hash} --associated-data "rootfs-hash" || panic "FSINIT: Failed to extend rootfs to RTMR"
     umount /root || panic "FSINIT: Failed to unmount /root"
 }
